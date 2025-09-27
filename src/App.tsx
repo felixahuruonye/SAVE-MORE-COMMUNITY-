@@ -7,6 +7,10 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import AppLayout from "./components/Layout/AppLayout";
 import Auth from "./pages/Auth";
 import Feed from "./pages/Feed";
+import Chat from "./pages/Chat";
+import Groups from "./pages/Groups";
+import Marketplace from "./pages/Marketplace";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,22 +49,22 @@ const App = () => (
             } />
             <Route path="/groups" element={
               <ProtectedRoute>
-                <div className="p-4"><h1>Groups (Coming Soon)</h1></div>
+                <Groups />
               </ProtectedRoute>
             } />
             <Route path="/chat" element={
               <ProtectedRoute>
-                <div className="p-4"><h1>Chat (Coming Soon)</h1></div>
+                <Chat />
               </ProtectedRoute>
             } />
             <Route path="/marketplace" element={
               <ProtectedRoute>
-                <div className="p-4"><h1>Marketplace (Coming Soon)</h1></div>
+                <Marketplace />
               </ProtectedRoute>
             } />
             <Route path="/profile" element={
               <ProtectedRoute>
-                <div className="p-4"><h1>Profile (Coming Soon)</h1></div>
+                <Profile />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -352,6 +352,77 @@ export type Database = {
         }
         Relationships: []
       }
+      group_members: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string
+          role: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          description: string | null
+          group_type: string
+          id: string
+          is_suspended: boolean | null
+          member_count: number | null
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          description?: string | null
+          group_type?: string
+          id?: string
+          is_suspended?: boolean | null
+          member_count?: number | null
+          name: string
+          owner_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          description?: string | null
+          group_type?: string
+          id?: string
+          is_suspended?: boolean | null
+          member_count?: number | null
+          name?: string
+          owner_id?: string
+        }
+        Relationships: []
+      }
       live_chat_sessions: {
         Row: {
           created_at: string
@@ -508,6 +579,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          is_read: boolean | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           amount_ngn: number
@@ -595,6 +699,77 @@ export type Database = {
         }
         Relationships: []
       }
+      post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_shares: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          share_type: string
+          target_group_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          share_type: string
+          target_group_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          share_type?: string
+          target_group_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_shares_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_shares_target_group_id_fkey"
+            columns: ["target_group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           body: string
@@ -607,10 +782,12 @@ export type Database = {
           id: string
           likes_count: number | null
           media_urls: string[] | null
+          rating: number | null
           reports_count: number | null
           status: string
           title: string
           user_id: string
+          view_count: number | null
         }
         Insert: {
           body: string
@@ -623,10 +800,12 @@ export type Database = {
           id?: string
           likes_count?: number | null
           media_urls?: string[] | null
+          rating?: number | null
           reports_count?: number | null
           status?: string
           title: string
           user_id: string
+          view_count?: number | null
         }
         Update: {
           body?: string
@@ -639,10 +818,12 @@ export type Database = {
           id?: string
           likes_count?: number | null
           media_urls?: string[] | null
+          rating?: number | null
           reports_count?: number | null
           status?: string
           title?: string
           user_id?: string
+          view_count?: number | null
         }
         Relationships: []
       }
@@ -1234,6 +1415,63 @@ export type Database = {
           title?: string
           type?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          analytics_last_seen: string | null
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          device_id: string | null
+          full_name: string | null
+          id: string
+          is_online: boolean | null
+          last_seen: string | null
+          star_balance: number | null
+          updated_at: string
+          username: string
+          vip: boolean | null
+          vip_expires_at: string | null
+          vip_started_at: string | null
+          wallet_balance: number | null
+        }
+        Insert: {
+          analytics_last_seen?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          device_id?: string | null
+          full_name?: string | null
+          id: string
+          is_online?: boolean | null
+          last_seen?: string | null
+          star_balance?: number | null
+          updated_at?: string
+          username: string
+          vip?: boolean | null
+          vip_expires_at?: string | null
+          vip_started_at?: string | null
+          wallet_balance?: number | null
+        }
+        Update: {
+          analytics_last_seen?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          device_id?: string | null
+          full_name?: string | null
+          id?: string
+          is_online?: boolean | null
+          last_seen?: string | null
+          star_balance?: number | null
+          updated_at?: string
+          username?: string
+          vip?: boolean | null
+          vip_expires_at?: string | null
+          vip_started_at?: string | null
+          wallet_balance?: number | null
         }
         Relationships: []
       }
