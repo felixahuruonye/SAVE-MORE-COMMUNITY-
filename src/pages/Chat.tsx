@@ -69,24 +69,50 @@ const Chat = () => {
 
   const fetchMessages = async () => {
     try {
-      const { data, error } = await supabase
+      // First get messages
+      const { data: messagesData, error: messagesError } = await supabase
         .from('messages')
-        .select(`
-          *,
-          user_profiles!messages_from_user_id_fkey (
-            username,
-            avatar_url,
-            vip,
-            is_online
-          )
-        `)
+        .select('*')
         .eq('channel', activeChannel)
         .is('to_user_id', null) // Only public messages for global chat
         .order('created_at', { ascending: true })
         .limit(100);
 
-      if (error) throw error;
-      setMessages(data || []);
+      if (messagesError) throw messagesError;
+
+      if (messagesData && messagesData.length > 0) {
+        // Get unique user IDs
+        const userIds = [...new Set(messagesData.map(msg => msg.from_user_id))];
+        
+        // Fetch user profiles
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('user_profiles')
+          .select('id, username, avatar_url, vip, is_online')
+          .in('id', userIds);
+
+        if (profilesError) throw profilesError;
+
+        // Create profiles lookup
+        const profilesLookup: { [key: string]: any } = {};
+        profilesData?.forEach(profile => {
+          profilesLookup[profile.id] = profile;
+        });
+
+        // Merge messages with profiles
+        const messagesWithProfiles = messagesData.map(msg => ({
+          ...msg,
+          user_profiles: profilesLookup[msg.from_user_id] || {
+            username: 'Unknown',
+            avatar_url: '',
+            vip: false,
+            is_online: false
+          }
+        }));
+
+        setMessages(messagesWithProfiles);
+      } else {
+        setMessages([]);
+      }
     } catch (error) {
       console.error('Error fetching messages:', error);
       toast({
@@ -126,24 +152,22 @@ const Chat = () => {
           filter: `channel=eq.${activeChannel}`
         },
         async (payload) => {
-          // Fetch the complete message with user data
-          const { data } = await supabase
-            .from('messages')
-            .select(`
-              *,
-              user_profiles!messages_from_user_id_fkey (
-                username,
-                avatar_url,
-                vip,
-                is_online
-              )
-            `)
-            .eq('id', payload.new.id)
+          // Fetch user profile for new message
+          const { data: profileData } = await supabase
+            .from('user_profiles')
+            .select('username, avatar_url, vip, is_online')
+            .eq('id', payload.new.from_user_id)
             .single();
 
-          if (data) {
-            setMessages(prev => [...prev, data]);
-          }
+          setMessages(prev => [...prev, {
+            ...payload.new,
+            user_profiles: profileData || {
+              username: 'Unknown',
+              avatar_url: '',
+              vip: false,
+              is_online: false
+            }
+          } as Message]);
         }
       )
       .on(

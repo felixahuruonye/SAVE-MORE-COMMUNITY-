@@ -65,7 +65,10 @@ const Groups = () => {
         .order('member_count', { ascending: false });
 
       if (error) throw error;
-      setGroups(data || []);
+      setGroups((data || []).map(group => ({
+        ...group,
+        group_type: group.group_type as 'public' | 'private'
+      })));
     } catch (error) {
       console.error('Error fetching groups:', error);
       toast({

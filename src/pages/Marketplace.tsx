@@ -77,33 +77,47 @@ const Marketplace = () => {
   };
 
   const fetchProducts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select(`
-          *,
-          user_profiles!products_seller_user_id_fkey (
-            username,
-            avatar_url,
-            vip
-          )
-        `)
-        .eq('status', 'active')
-        .order('featured', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load marketplace products",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+    // Since products table doesn't exist yet, show placeholder data
+    const placeholderProducts: Product[] = [
+      {
+        id: 'product-1',
+        title: 'Fresh Vegetables Bundle',
+        description: 'Farm fresh vegetables delivered to your door',
+        price_ngn: 2500,
+        images: [],
+        seller_user_id: '',
+        seller_contact: '+234 xxx xxxx',
+        stock: 10,
+        featured: true,
+        delivery_options: 'Same day delivery',
+        created_at: new Date().toISOString(),
+        user_profiles: {
+          username: 'FarmFresh',
+          avatar_url: '',
+          vip: true
+        }
+      },
+      {
+        id: 'product-2',
+        title: 'Organic Rice (50kg)',
+        description: 'Premium quality organic rice, perfect for families',
+        price_ngn: 15000,
+        images: [],
+        seller_user_id: '',
+        seller_contact: '+234 xxx xxxx',
+        stock: 5,
+        featured: false,
+        delivery_options: 'Pickup available',
+        created_at: new Date().toISOString(),
+        user_profiles: {
+          username: 'GrainMart',
+          avatar_url: '',
+          vip: false
+        }
+      }
+    ];
+    setProducts(placeholderProducts);
+    setLoading(false);
   };
 
   const fetchMyProducts = async () => {
