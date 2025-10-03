@@ -34,10 +34,11 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated }) => {
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const validFiles = files.filter(file => {
-      if (file.size > 20 * 1024 * 1024) { // 20MB limit
+      const maxSize = file.type.startsWith('video/') ? 500 * 1024 * 1024 : 20 * 1024 * 1024; // 500MB for videos, 20MB for images
+      if (file.size > maxSize) {
         toast({
           title: "File too large",
-          description: `${file.name} is larger than 20MB`,
+          description: `${file.name} is larger than ${file.type.startsWith('video/') ? '500MB' : '20MB'}`,
           variant: "destructive"
         });
         return false;
@@ -237,7 +238,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated }) => {
                   />
                 </label>
                 <p className="text-xs text-muted-foreground">
-                  Max 3 files, 20MB each
+                  Max 3 files. Images: 20MB, Videos: 500MB (up to 3 hours)
                 </p>
               </div>
             </div>

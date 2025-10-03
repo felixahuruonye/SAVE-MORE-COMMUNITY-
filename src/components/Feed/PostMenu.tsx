@@ -57,8 +57,19 @@ export const PostMenu = ({ postId, postOwnerId, onPostDeleted }: PostMenuProps) 
   const handleRemoveFromFeed = async () => {
     if (!user) return;
 
-    // Mark post as hidden for this user (you'd need a user_hidden_posts table)
-    toast({ title: 'Success', description: 'Post removed from your feed' });
+    const { error } = await supabase
+      .from('hidden_posts')
+      .insert({
+        user_id: user.id,
+        post_id: postId
+      });
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to hide post', variant: 'destructive' });
+    } else {
+      toast({ title: 'Success', description: 'Post removed from your feed' });
+      if (onPostDeleted) onPostDeleted();
+    }
   };
 
   const handleReport = async () => {

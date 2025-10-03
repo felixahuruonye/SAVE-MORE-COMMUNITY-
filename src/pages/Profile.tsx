@@ -6,13 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Crown, Star, ShoppingBag, Settings, LogOut, Edit, Heart, MessageCircle } from 'lucide-react';
+import { Crown, Star, ShoppingBag, Settings, LogOut, Edit, Heart, MessageCircle, UserPlus, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { VideoPlayer } from '@/components/Feed/VideoPlayer';
 import { CommentSection } from '@/components/Feed/CommentSection';
 import { ShareMenu } from '@/components/Feed/ShareMenu';
 import { PostMenu } from '@/components/Feed/PostMenu';
+import { EditProfile } from '@/components/Profile/EditProfile';
 
 interface UserProfile {
   id: string;
@@ -24,25 +25,36 @@ interface UserProfile {
   vip_expires_at: string;
   wallet_balance: number;
   star_balance: number;
+  follower_count: number;
+  following_count: number;
+  post_count: number;
+  total_reactions: number;
   created_at: string;
 }
 
 const Profile = () => {
   const { user, signOut } = useAuth();
   const { userId } = useParams();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [userPosts, setUserPosts] = useState([]);
   const [postLikes, setPostLikes] = useState<{ [key: string]: any[] }>({});
   const [expandedComments, setExpandedComments] = useState<{ [key: string]: boolean }>({});
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
   const { toast } = useToast();
 
   const profileId = userId || user?.id;
+  const isOwnProfile = !userId || userId === user?.id;
 
   useEffect(() => {
     if (profileId) {
       fetchProfile();
       fetchUserPosts();
+      if (!isOwnProfile) {
+        checkFollowStatus();
+      }
     }
   }, [profileId]);
 
@@ -140,6 +152,55 @@ const Profile = () => {
     window.open(`https://paystack.com/pay/buy-stars?metadata=user_id:${user?.id}|type:stars`, '_blank');
   };
 
+  const checkFollowStatus = async () => {
+    if (!user || !profileId) return;
+
+    const { data } = await supabase
+      .from('followers')
+      .select('id')
+      .eq('follower_id', user.id)
+      .eq('following_id', profileId)
+      .single();
+
+    setIsFollowing(!!data);
+  };
+
+  const handleFollow = async () => {
+    if (!user || !profileId) return;
+
+    try {
+      if (isFollowing) {
+        await supabase
+          .from('followers')
+          .delete()
+          .eq('follower_id', user.id)
+          .eq('following_id', profileId);
+        
+        setIsFollowing(false);
+        toast({ title: "Unfollowed successfully" });
+      } else {
+        await supabase
+          .from('followers')
+          .insert({
+            follower_id: user.id,
+            following_id: profileId
+          });
+        
+        setIsFollowing(true);
+        toast({ title: "Following successfully" });
+      }
+      fetchProfile();
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+    }
+  };
+
+  const handleMessage = () => {
+    if (profileId) {
+      navigate('/chat', { state: { recipientId: profileId } });
+    }
+  };
+
   const handleLogout = async () => {
     await signOut();
   };
@@ -195,35 +256,75 @@ const Profile = () => {
                 <p className="text-sm">{profile.bio}</p>
               )}
               
-              <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start space-y-2 sm:space-y-0 sm:space-x-4 pt-2">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium">₦{profile.wallet_balance}</span>
-                  <span className="text-xs text-muted-foreground">Wallet</span>
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-2">
+                <div className="text-center">
+                  <div className="text-lg font-bold">{profile.follower_count || 0}</div>
+                  <div className="text-xs text-muted-foreground">Followers</div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Star className="w-4 h-4 text-yellow-500" />
-                  <span className="text-sm font-medium">{profile.star_balance}</span>
-                  <span className="text-xs text-muted-foreground">Stars</span>
+                <div className="text-center">
+                  <div className="text-lg font-bold">{profile.post_count || 0}</div>
+                  <div className="text-xs text-muted-foreground">Posts</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold">{profile.total_reactions || 0}</div>
+                  <div className="text-xs text-muted-foreground">Reactions</div>
                 </div>
               </div>
+
+              {isOwnProfile && (
+                <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start space-y-2 sm:space-y-0 sm:space-x-4 pt-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium">₦{profile.wallet_balance}</span>
+                    <span className="text-xs text-muted-foreground">Wallet</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Star className="w-4 h-4 text-yellow-500" />
+                    <span className="text-sm font-medium">{profile.star_balance}</span>
+                    <span className="text-xs text-muted-foreground">Stars</span>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="flex flex-col space-y-2">
-              <Button variant="outline" size="sm">
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Profile
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
+              {isOwnProfile ? (
+                <>
+                  <Button variant="outline" size="sm" onClick={() => setEditProfileOpen(true)}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit Profile
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleLogout}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    variant={isFollowing ? "outline" : "default"} 
+                    size="sm"
+                    onClick={handleFollow}
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleMessage}>
+                    <Send className="w-4 h-4 mr-2" />
+                    Message
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleBuyStars}>
+                    <Star className="w-4 h-4 mr-2" />
+                    Buy Star
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* VIP Section */}
-      {!profile.vip && (
+      {/* VIP Section - Only for own profile */}
+      {isOwnProfile && !profile.vip && (
         <Card className="border-yellow-200 bg-yellow-50">
           <CardHeader>
             <CardTitle className="text-yellow-800 flex items-center">
@@ -249,8 +350,9 @@ const Profile = () => {
         </Card>
       )}
 
-      {/* Star Balance Section */}
-      <Card>
+      {/* Star Balance Section - Only for own profile */}
+      {isOwnProfile && (
+        <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
             <Star className="w-5 h-5 mr-2 text-yellow-500" />
@@ -267,14 +369,13 @@ const Profile = () => {
           </Button>
         </CardContent>
       </Card>
+      )}
 
-      {/* Tabs for Posts, Groups, etc. */}
+      {/* Tabs for Posts */}
       <Tabs defaultValue="posts" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="posts">My Posts</TabsTrigger>
-          <TabsTrigger value="groups">Groups</TabsTrigger>
-          <TabsTrigger value="marketplace">Listings</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="posts">{isOwnProfile ? 'My Posts' : 'Posts'}</TabsTrigger>
+          {isOwnProfile && <TabsTrigger value="settings">Settings</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="posts">
@@ -364,31 +465,8 @@ const Profile = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="groups">
-          <Card>
-            <CardHeader>
-              <CardTitle>My Groups</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Groups feature coming soon...</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="marketplace">
-          <Card>
-            <CardHeader>
-              <CardTitle>My Marketplace Listings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                {profile.vip ? "No listings yet" : "Upgrade to VIP to access marketplace"}
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="settings">
+        {isOwnProfile && (
+          <TabsContent value="settings">
           <Card>
             <CardHeader>
               <CardTitle>Account Settings</CardTitle>
@@ -417,7 +495,22 @@ const Profile = () => {
             </CardContent>
           </Card>
         </TabsContent>
+        )}
       </Tabs>
+
+      {/* Edit Profile Dialog */}
+      {isOwnProfile && profile && (
+        <EditProfile
+          open={editProfileOpen}
+          onOpenChange={setEditProfileOpen}
+          currentProfile={{
+            username: profile.username,
+            bio: profile.bio,
+            avatar_url: profile.avatar_url
+          }}
+          onProfileUpdated={fetchProfile}
+        />
+      )}
     </div>
   );
 };

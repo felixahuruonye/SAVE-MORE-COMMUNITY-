@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Edit, RefreshCw, Lock } from 'lucide-react';
+import { ReportsTab } from '@/components/Admin/ReportsTab';
 
 const AdminPanel = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -151,8 +152,9 @@ const AdminPanel = () => {
         </div>
 
         <Tabs defaultValue="posts" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="posts">Posts Management</TabsTrigger>
+            <TabsTrigger value="reports">Reports</TabsTrigger>
             <TabsTrigger value="tasks">Tasks Management</TabsTrigger>
             <TabsTrigger value="users">Users Overview</TabsTrigger>
           </TabsList>
@@ -218,6 +220,10 @@ const AdminPanel = () => {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <ReportsTab />
           </TabsContent>
 
           <TabsContent value="tasks">

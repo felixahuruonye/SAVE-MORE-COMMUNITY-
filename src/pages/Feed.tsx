@@ -119,15 +119,23 @@ const Feed = () => {
           query = query.in('id', viewedIds);
         }
       } else if (user) {
-        // Get posts the user hasn't viewed yet
+        // Get posts the user hasn't viewed yet and hidden posts
         const { data: viewedPostIds } = await supabase
           .from('post_views')
           .select('post_id')
           .eq('user_id', user.id);
 
+        const { data: hiddenPostIds } = await supabase
+          .from('hidden_posts')
+          .select('post_id')
+          .eq('user_id', user.id);
+
         const viewedIds = viewedPostIds?.map(v => v.post_id) || [];
-        if (viewedIds.length > 0) {
-          query = query.not('id', 'in', `(${viewedIds.join(',')})`);
+        const hiddenIds = hiddenPostIds?.map(h => h.post_id) || [];
+        const excludeIds = [...new Set([...viewedIds, ...hiddenIds])];
+        
+        if (excludeIds.length > 0) {
+          query = query.not('id', 'in', `(${excludeIds.join(',')})`);
         }
       }
 
@@ -526,7 +534,7 @@ const Feed = () => {
                         onClick={() => handleLike(post.id)}
                       >
                         <Heart className={`w-4 h-4 mr-1 ${currentUserLiked ? 'fill-current' : ''}`} />
-                        <span className="text-xs">{post.likes_count}</span>
+                        <span className="text-xs font-medium">{postLikes[post.id]?.length || 0}</span>
                       </Button>
                       <Button 
                         variant="ghost" 
@@ -535,7 +543,7 @@ const Feed = () => {
                         onClick={() => toggleComments(post.id)}
                       >
                         <MessageCircle className="w-4 h-4 mr-1" />
-                        <span className="text-xs">{post.comments_count}</span>
+                        <span className="text-xs font-medium">{post.comments_count || 0}</span>
                       </Button>
                     </div>
                     <ShareMenu postId={post.id} postTitle={post.title} />

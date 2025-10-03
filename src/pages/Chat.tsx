@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Send, Users, MessageCircle, Phone, Video, Mic, Smile, Paperclip } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useLocation } from 'react-router-dom';
+import { PrivateChat } from '@/components/Chat/PrivateChat';
 
 interface Message {
   id: string;
@@ -36,13 +38,27 @@ interface OnlineUser {
 
 const Chat = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeChannel, setActiveChannel] = useState('global');
+  const [chatMode, setChatMode] = useState<'public' | 'private'>('public');
+  const [selectedRecipient, setSelectedRecipient] = useState<OnlineUser | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Check if navigated from profile with recipient
+  useEffect(() => {
+    if (location.state?.recipientId) {
+      const recipient = onlineUsers.find(u => u.id === location.state.recipientId);
+      if (recipient) {
+        setSelectedRecipient(recipient);
+        setChatMode('private');
+      }
+    }
+  }, [location.state, onlineUsers]);
 
   useEffect(() => {
     if (user) {
@@ -226,9 +242,9 @@ const Chat = () => {
     }
   };
 
-  const startPrivateChat = (userId: string) => {
-    // Implement private chat functionality
-    console.log('Start private chat with:', userId);
+  const startPrivateChat = (onlineUser: OnlineUser) => {
+    setSelectedRecipient(onlineUser);
+    setChatMode('private');
   };
 
   const formatTime = (timestamp: string) => {
@@ -238,29 +254,54 @@ const Chat = () => {
     });
   };
 
+  // If in private chat with selected recipient
+  if (chatMode === 'private' && selectedRecipient) {
+    return (
+      <PrivateChat
+        recipientId={selectedRecipient.id}
+        recipientName={selectedRecipient.username}
+        recipientAvatar={selectedRecipient.avatar_url}
+        onBack={() => {
+          setSelectedRecipient(null);
+          setChatMode('public');
+        }}
+      />
+    );
+  }
+
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
       <div className="bg-card border-b p-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold">SaveMore Chat</h1>
-          <Badge variant="outline">
-            <Users className="w-3 h-3 mr-1" />
-            {onlineUsers.length} online
-          </Badge>
+          <div className="flex items-center space-x-2">
+            <Tabs value={chatMode} onValueChange={(v) => setChatMode(v as 'public' | 'private')}>
+              <TabsList className="h-8">
+                <TabsTrigger value="public" className="text-xs">Public</TabsTrigger>
+                <TabsTrigger value="private" className="text-xs">Private</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Badge variant="outline">
+              <Users className="w-3 h-3 mr-1" />
+              {onlineUsers.length} online
+            </Badge>
+          </div>
         </div>
       </div>
 
       <div className="flex-1 flex">
         {/* Online Users Sidebar */}
         <div className="w-64 bg-card border-r p-4 hidden md:block">
-          <h3 className="font-semibold mb-4">Active Users</h3>
+          <h3 className="font-semibold mb-4">
+            {chatMode === 'private' ? 'Select User to Chat' : 'Active Users'}
+          </h3>
           <div className="space-y-2">
             {onlineUsers.map((onlineUser) => (
               <div
                 key={onlineUser.id}
                 className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent cursor-pointer"
-                onClick={() => startPrivateChat(onlineUser.id)}
+                onClick={() => chatMode === 'private' && startPrivateChat(onlineUser)}
               >
                 <div className="relative">
                   <Avatar className="w-8 h-8">
@@ -286,6 +327,15 @@ const Chat = () => {
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col">
+          {chatMode === 'private' && !selectedRecipient ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center text-muted-foreground">
+                <MessageCircle className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p>Select a user from the sidebar to start a private chat</p>
+              </div>
+            </div>
+          ) : (
+            <>
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {loading ? (
@@ -364,6 +414,8 @@ const Chat = () => {
               {newMessage.length}/500 characters
             </p>
           </div>
+          </>
+          )}
         </div>
       </div>
     </div>
