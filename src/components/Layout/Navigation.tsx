@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, MessageCircle, ShoppingBag, User, Users } from 'lucide-react';
+import { Home, MessageCircle, ShoppingBag, User, Users, Bell } from 'lucide-react';
 
 const Navigation = () => {
   const location = useLocation();
@@ -9,7 +9,7 @@ const Navigation = () => {
     { icon: Home, label: 'Home', path: '/' },
     { icon: Users, label: 'Groups', path: '/groups' },
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
-    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
+    { icon: Bell, label: 'Notifications', path: '/notifications' },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
 

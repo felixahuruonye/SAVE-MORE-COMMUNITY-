@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Heart, MessageCircle, Star, Home, History, X } from 'lucide-react';
+import { Heart, MessageCircle, Star, Home, History, X, Plus } from 'lucide-react';
+import { StorylineViewer } from '@/components/Storyline/StorylineViewer';
+import { CreateStoryline } from '@/components/Storyline/CreateStoryline';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import CreatePost from '@/components/Posts/CreatePost';
@@ -59,6 +61,8 @@ const Feed = () => {
   const [showOldPosts, setShowOldPosts] = useState(false);
   const [expandedComments, setExpandedComments] = useState<{ [key: string]: boolean }>({});
   const [fullscreenMedia, setFullscreenMedia] = useState<string | null>(null);
+  const [storylineUser, setStorylineUser] = useState<string | null>(null);
+  const [userStories, setUserStories] = useState<{ [key: string]: number }>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -71,6 +75,7 @@ const Feed = () => {
     if (userProfile) {
       fetchPosts();
       setupRealtimeSubscription();
+      loadUserStories();
     }
   }, [userProfile]);
 
@@ -98,6 +103,25 @@ const Feed = () => {
       console.error('Error checking profile:', error);
       setLoading(false);
     }
+  };
+
+  const loadUserStories = async () => {
+    // Get all unique user IDs from posts
+    const userIds = [...new Set(posts.map(p => p.user_id))];
+    if (userIds.length === 0) return;
+
+    // Count stories for each user
+    const storyCounts: { [key: string]: number } = {};
+    for (const userId of userIds) {
+      const { count } = await (supabase as any)
+        .from('user_storylines')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gt('expires_at', new Date().toISOString());
+      
+      storyCounts[userId] = count || 0;
+    }
+    setUserStories(storyCounts);
   };
 
   const fetchPosts = async () => {
@@ -443,16 +467,27 @@ const Feed = () => {
             <Card key={post.id} id={`post-${post.id}`} className="overflow-hidden">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <button
-                    onClick={() => handleProfileClick(post.user_id)}
-                    className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
-                  >
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={postUser?.avatar_url} />
-                      <AvatarFallback>
-                        {postUser?.username?.charAt(0).toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
+                   <button
+                     onClick={() => handleProfileClick(post.user_id)}
+                     className="flex items-center space-x-3 hover:opacity-80 transition-opacity relative"
+                   >
+                     <div className="relative">
+                       <Avatar className="w-10 h-10">
+                         <AvatarImage src={postUser?.avatar_url} />
+                         <AvatarFallback>
+                           {postUser?.username?.charAt(0).toUpperCase() || 'U'}
+                         </AvatarFallback>
+                       </Avatar>
+                       {userStories[post.user_id] > 0 && (
+                         <div 
+                           className="absolute inset-0 rounded-full border-2 border-blue-500 cursor-pointer"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             setStorylineUser(post.user_id);
+                           }}
+                         />
+                       )}
+                     </div>
                     <div className="text-left">
                       <div className="flex items-center space-x-2">
                         <span className="font-semibold">{postUser?.username || 'Anonymous'}</span>
@@ -588,6 +623,15 @@ const Feed = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Storyline Viewer */}
+      {storylineUser && (
+        <StorylineViewer
+          userId={storylineUser}
+          open={!!storylineUser}
+          onClose={() => setStorylineUser(null)}
+        />
+      )}
     </div>
   );
 };

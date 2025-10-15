@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,23 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated }) => {
   const [category, setCategory] = useState('');
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
+  const [editPostId, setEditPostId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Check if there's an edit post in sessionStorage
+    const editData = sessionStorage.getItem('editPost');
+    if (editData) {
+      const post = JSON.parse(editData);
+      setTitle(post.title);
+      setBody(post.body);
+      setCategory(post.category);
+      setEditPostId(post.id);
+      setMediaPreviews(post.media_urls || []);
+      setOpen(true);
+      sessionStorage.removeItem('editPost');
+    }
+  }, []);
 
   const categories = [
     'Jollof Rice', 'Desserts', 'Equipment', 'For Sale', 'Tips & Tricks',
@@ -98,6 +114,90 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated }) => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user || !title.trim() || !body.trim() || !category) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      let mediaUrls: string[] = [];
+      
+      // Upload new media if any
+      if (mediaFiles.length > 0) {
+        mediaUrls = await uploadMedia();
+      } else if (editPostId) {
+        // Keep existing media URLs if editing
+        mediaUrls = mediaPreviews;
+      }
+
+      if (editPostId) {
+        // Update existing post
+        const { error } = await supabase
+          .from('posts')
+          .update({
+            title: title.trim(),
+            body: body.trim(),
+            category,
+            media_urls: mediaUrls
+          })
+          .eq('id', editPostId);
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Post updated successfully!"
+        });
+      } else {
+        // Create new post
+        const { error } = await supabase.from('posts').insert({
+          title: title.trim(),
+          body: body.trim(),
+          category,
+          media_urls: mediaUrls,
+          user_id: user.id,
+          status: 'approved'
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Post created successfully!"
+        });
+      }
+
+      // Reset form
+      setTitle('');
+      setBody('');
+      setCategory('');
+      setMediaFiles([]);
+      setMediaPreviews([]);
+      setEditPostId(null);
+      setOpen(false);
+      
+      if (onPostCreated) {
+        onPostCreated();
+      }
+    } catch (error) {
+      console.error('Error submitting post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit post. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
     e.preventDefault();
     if (!user || !title.trim() || !body.trim() || !category) return;
 
@@ -296,7 +396,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated }) => {
               type="submit" 
               disabled={loading || !title.trim() || !body.trim() || !category}
             >
-              {loading ? "Creating..." : "Create Post"}
+              {loading ? (editPostId ? "Updating..." : "Creating...") : (editPostId ? "Update Post" : "Create Post")}
             </Button>
           </div>
         </form>

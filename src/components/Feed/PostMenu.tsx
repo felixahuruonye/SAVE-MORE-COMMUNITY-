@@ -38,18 +38,32 @@ export const PostMenu = ({ postId, postOwnerId, onPostDeleted }: PostMenuProps) 
 
   const isOwner = user?.id === postOwnerId;
 
-  const handleEdit = () => {
-    navigate(`/edit-post/${postId}`);
+  const handleEdit = async () => {
+    // Fetch post data and open create post dialog with edit mode
+    const { data: post } = await supabase
+      .from('posts')
+      .select('*')
+      .eq('id', postId)
+      .single();
+    
+    if (post) {
+      // Store post data in sessionStorage to be picked up by CreatePost
+      sessionStorage.setItem('editPost', JSON.stringify(post));
+      window.location.reload(); // Reload to trigger CreatePost to open with edit data
+    }
   };
 
   const handleDelete = async () => {
-    const { error } = await supabase.from('posts').delete().eq('id', postId);
+    try {
+      const { error } = await supabase.from('posts').delete().eq('id', postId);
 
-    if (error) {
-      toast({ title: 'Error', description: 'Failed to delete post', variant: 'destructive' });
-    } else {
+      if (error) throw error;
+      
       toast({ title: 'Success', description: 'Post deleted successfully' });
       if (onPostDeleted) onPostDeleted();
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast({ title: 'Error', description: 'Failed to delete post', variant: 'destructive' });
     }
     setShowDeleteDialog(false);
   };
@@ -57,34 +71,43 @@ export const PostMenu = ({ postId, postOwnerId, onPostDeleted }: PostMenuProps) 
   const handleRemoveFromFeed = async () => {
     if (!user) return;
 
-    const { error } = await supabase
-      .from('hidden_posts')
-      .insert({
-        user_id: user.id,
-        post_id: postId
-      });
+    try {
+      const { error } = await supabase
+        .from('hidden_posts')
+        .insert({
+          user_id: user.id,
+          post_id: postId
+        });
 
-    if (error) {
-      toast({ title: 'Error', description: 'Failed to hide post', variant: 'destructive' });
-    } else {
+      if (error) throw error;
+      
       toast({ title: 'Success', description: 'Post removed from your feed' });
+      // Immediately trigger refresh
       if (onPostDeleted) onPostDeleted();
+    } catch (error) {
+      console.error('Remove from feed error:', error);
+      toast({ title: 'Error', description: 'Failed to hide post', variant: 'destructive' });
     }
   };
 
   const handleReport = async () => {
     if (!user || !reportReason.trim()) return;
 
-    const { error } = await supabase.from('post_reports').insert({
-      post_id: postId,
-      reporter_user_id: user.id,
-      reason: reportReason.trim(),
-    });
+    try {
+      const { error } = await supabase.from('post_reports').insert({
+        post_id: postId,
+        reporter_user_id: user.id,
+        reason: reportReason.trim(),
+      });
 
-    if (error) {
-      toast({ title: 'Error', description: 'Failed to report post', variant: 'destructive' });
-    } else {
+      if (error) throw error;
+      
       toast({ title: 'Success', description: 'Post reported. We will review it shortly.' });
+      // Auto-hide the post after reporting
+      await handleRemoveFromFeed();
+    } catch (error) {
+      console.error('Report error:', error);
+      toast({ title: 'Error', description: 'Failed to report post', variant: 'destructive' });
     }
     setShowReportDialog(false);
     setReportReason('');

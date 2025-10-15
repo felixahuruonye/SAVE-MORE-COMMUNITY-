@@ -13,6 +13,7 @@ import Groups from "./pages/Groups";
 import Marketplace from "./pages/Marketplace";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
+import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -72,6 +73,11 @@ const App = () => (
             <Route path="/profile/:userId" element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/notifications" element={
+              <ProtectedRoute>
+                <Notifications />
               </ProtectedRoute>
             } />
             <Route path="/admin" element={<Admin />} />
