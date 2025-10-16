@@ -29,7 +29,13 @@ const Notifications = () => {
   useEffect(() => {
     if (user) {
       loadNotifications();
-      setupRealtimeSubscription();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      const cleanup = setupRealtimeSubscription();
+      return cleanup;
     }
   }, [user]);
 
@@ -74,10 +80,20 @@ const Notifications = () => {
           filter: `user_id=eq.${user?.id}`
         },
         (payload) => {
-          setNotifications((prev) => [payload.new as Notification, ...prev]);
+          const newNotification = {
+            id: payload.new.id,
+            title: payload.new.title,
+            message: payload.new.message,
+            type: payload.new.type,
+            related_id: payload.new.related_id,
+            notification_category: payload.new.notification_category,
+            is_read: payload.new.is_read_receipt || false,
+            created_at: payload.new.created_at
+          };
+          setNotifications((prev) => [newNotification, ...prev]);
           toast({
             title: 'New Notification',
-            description: (payload.new as Notification).message
+            description: newNotification.message
           });
         }
       )

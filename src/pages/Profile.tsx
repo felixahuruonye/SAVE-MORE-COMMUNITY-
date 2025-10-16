@@ -55,8 +55,53 @@ const Profile = () => {
       if (!isOwnProfile) {
         checkFollowStatus();
       }
+      setupRealtimeSubscription();
     }
   }, [profileId]);
+
+  const setupRealtimeSubscription = () => {
+    const channel = supabase
+      .channel(`profile-${profileId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'post_likes',
+        },
+        () => {
+          fetchUserPosts();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'posts',
+        },
+        () => {
+          fetchUserPosts();
+          fetchProfile();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'post_comments',
+        },
+        () => {
+          fetchUserPosts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
 
   const fetchProfile = async () => {
     if (!profileId) return;
@@ -95,24 +140,36 @@ const Profile = () => {
 
       if (error) throw error;
 
+      let likesLookup: { [key: string]: any[] } = {};
       if (postsData && postsData.length > 0) {
         const { data: likesData } = await supabase
           .from('post_likes')
           .select('*')
           .in('post_id', postsData.map(p => p.id));
 
-        const likesLookup: { [key: string]: any[] } = {};
+        likesLookup = {};
         likesData?.forEach(like => {
           if (!likesLookup[like.post_id]) {
             likesLookup[like.post_id] = [];
           }
           likesLookup[like.post_id].push(like);
         });
-
-        setPostLikes(likesLookup);
       }
 
-      setUserPosts(postsData || []);
+      setPostLikes(likesLookup);
+
+      // Load comment counts per post
+      const postsWithCounts = await Promise.all(
+        (postsData || []).map(async (p: any) => {
+          const { count } = await (supabase as any)
+            .from('post_comments')
+            .select('*', { count: 'exact', head: true })
+            .eq('post_id', p.id);
+          return { ...p, comments_count: count || 0 };
+        })
+      );
+
+      setUserPosts(postsWithCounts);
     } catch (error) {
       console.error('Error fetching posts:', error);
     }

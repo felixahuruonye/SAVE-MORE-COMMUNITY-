@@ -75,9 +75,14 @@ const Feed = () => {
     if (userProfile) {
       fetchPosts();
       setupRealtimeSubscription();
-      loadUserStories();
     }
   }, [userProfile]);
+
+  useEffect(() => {
+    if (posts.length > 0) {
+      loadUserStories();
+    }
+  }, [posts]);
 
   const checkUserProfile = async () => {
     if (!user) return;
@@ -319,6 +324,28 @@ const Feed = () => {
           ));
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'posts'
+        },
+        () => {
+          fetchPosts();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'post_comments',
+        },
+        () => {
+          fetchPosts();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -452,6 +479,9 @@ const Feed = () => {
         </div>
         
         <SearchBar />
+        <div className="flex justify-end">
+          <CreateStoryline onCreated={loadUserStories} />
+        </div>
         <CreatePost onPostCreated={fetchPosts} />
       </div>
 

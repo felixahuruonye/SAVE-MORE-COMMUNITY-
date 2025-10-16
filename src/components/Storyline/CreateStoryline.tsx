@@ -63,9 +63,7 @@ export const CreateStoryline: React.FC<CreateStorylineProps> = ({ onCreated }) =
         .from('user_storylines')
         .insert({
           user_id: user.id,
-          media_url: publicUrl,
-          media_type: mediaFile.type.startsWith('video/') ? 'video' : 'image',
-          caption: caption.trim()
+          media_url: publicUrl
         });
 
       if (insertError) throw insertError;
