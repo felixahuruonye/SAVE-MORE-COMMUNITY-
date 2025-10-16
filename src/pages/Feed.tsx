@@ -124,6 +124,30 @@ const Feed = () => {
     setUserStories(storyCounts);
   };
 
+  const loadCommentCounts = async (postIds: string[]) => {
+    if (postIds.length === 0) return;
+    try {
+      const counts = await Promise.all(
+        postIds.map(async (id) => {
+          const { count } = await (supabase as any)
+            .from('post_comments')
+            .select('*', { count: 'exact', head: true })
+            .eq('post_id', id);
+          return { id, count: count || 0 };
+        })
+      );
+
+      setPosts((prev) =>
+        prev.map((p) => {
+          const c = counts.find((x) => x.id === p.id);
+          return { ...p, comments_count: c ? c.count : p.comments_count || 0 };
+        })
+      );
+    } catch (e) {
+      console.error('Error loading comment counts:', e);
+    }
+  };
+
   const fetchPosts = async () => {
     try {
       let query = supabase
@@ -209,6 +233,9 @@ const Feed = () => {
         setPosts(postsData);
         setUsers(usersLookup);
         setPostLikes(likesLookup);
+
+        // Load comment counts for these posts
+        await loadCommentCounts(postsData.map((p) => p.id));
       } else {
         setPosts([]);
         setUsers({});

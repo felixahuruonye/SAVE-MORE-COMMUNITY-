@@ -36,10 +36,7 @@ export const ReportsTab = () => {
     try {
       const { data, error } = await supabase
         .from('post_reports')
-        .select(`
-          *,
-          reporter:user_profiles!reporter_user_id(username)
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
 
