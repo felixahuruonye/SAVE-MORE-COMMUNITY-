@@ -160,24 +160,6 @@ const Feed = () => {
     }
   };
 
-  const loadUserStories = async () => {
-    // Get all unique user IDs from posts
-    const userIds = [...new Set(posts.map(p => p.user_id))];
-    if (userIds.length === 0) return;
-
-    // Count stories for each user
-    const storyCounts: { [key: string]: number } = {};
-    for (const userId of userIds) {
-      const { count } = await (supabase as any)
-        .from('user_storylines')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .gt('expires_at', new Date().toISOString());
-      
-      storyCounts[userId] = count || 0;
-    }
-    setUserStories(storyCounts);
-  };
 
   const loadCommentCounts = async (postIds: string[]) => {
     if (postIds.length === 0) return;
