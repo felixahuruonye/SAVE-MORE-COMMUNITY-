@@ -511,9 +511,38 @@ const Feed = () => {
         </div>
         
         <SearchBar />
-        <div className="flex justify-end">
-          <CreateStoryline onCreated={loadUserStories} />
-        </div>
+
+        {/* Stories Strip */}
+        <section aria-label="Stories" className="-mx-2">
+          <div className="overflow-x-auto px-2">
+            <div className="flex items-start gap-3">
+              {/* Create Story - Big Card */}
+              <div className="scale-110">
+                <StorylineCard
+                  type="create"
+                  avatarUrl={currentUserProfile?.avatar_url}
+                  onSelect={() => setShowCreateStory(true)}
+                />
+              </div>
+
+              {/* Other users' stories */}
+              {stories.map((story: any) => (
+                <StorylineCard
+                  key={story.id}
+                  type="story"
+                  previewUrl={story.preview_url || story.media_url}
+                  avatarUrl={story.user_profile?.avatar_url}
+                  username={story.user_profile?.username}
+                  onSelect={() => {
+                    setSelectedStoryUserId(story.user_id);
+                    setShowStoryViewer(true);
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+
         <CreatePost onPostCreated={fetchPosts} />
       </div>
 
@@ -567,15 +596,15 @@ const Feed = () => {
                            {postUser?.username?.charAt(0).toUpperCase() || 'U'}
                          </AvatarFallback>
                        </Avatar>
-                       {userStories[post.user_id] > 0 && (
-                         <div 
-                           className="absolute inset-0 rounded-full border-2 border-blue-500 cursor-pointer"
-                           onClick={(e) => {
-                             e.stopPropagation();
-                             setStorylineUser(post.user_id);
-                           }}
-                         />
-                       )}
+                        {stories.some((s: any) => s.user_id === post.user_id) && (
+                          <div 
+                            className="absolute inset-0 rounded-full border-2 border-primary cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setStorylineUser(post.user_id);
+                            }}
+                          />
+                        )}
                      </div>
                     <div className="text-left">
                       <div className="flex items-center space-x-2">

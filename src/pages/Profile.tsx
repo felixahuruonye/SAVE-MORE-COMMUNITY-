@@ -287,7 +287,7 @@ const Profile = () => {
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6">
-            <Avatar className="w-24 h-24">
+            <Avatar className="w-24 h-24 cursor-pointer" onClick={() => navigate(`/profile/${profile.id}`)}>
               <AvatarImage src={profile.avatar_url} />
               <AvatarFallback className="text-2xl">
                 {profile.username.charAt(0).toUpperCase()}
@@ -350,6 +350,10 @@ const Profile = () => {
                     <Edit className="w-4 h-4 mr-2" />
                     Edit Profile
                   </Button>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/marketplace')}>
+                    <ShoppingBag className="w-4 h-4 mr-2" />
+                    Marketplace
+                  </Button>
                   <Button variant="outline" size="sm" onClick={handleLogout}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Logout
@@ -368,6 +372,10 @@ const Profile = () => {
                   <Button variant="outline" size="sm" onClick={handleMessage}>
                     <Send className="w-4 h-4 mr-2" />
                     Message
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/marketplace')}>
+                    <ShoppingBag className="w-4 h-4 mr-2" />
+                    Marketplace
                   </Button>
                   <Button variant="outline" size="sm" onClick={handleBuyStars}>
                     <Star className="w-4 h-4 mr-2" />

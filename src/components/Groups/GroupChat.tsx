@@ -140,6 +140,20 @@ export const GroupChat: React.FC<GroupChatProps> = ({ groupId, groupName, onBack
     }
   };
 
+  const deleteMessage = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('group_messages')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast({ title: 'Error', description: 'Failed to delete message', variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -182,6 +196,16 @@ export const GroupChat: React.FC<GroupChatProps> = ({ groupId, groupName, onBack
                   <span className="text-xs text-muted-foreground mt-1">
                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
+                  {isOwnMessage && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs mt-1"
+                      onClick={() => deleteMessage(msg.id)}
+                    >
+                      Delete
+                    </Button>
+                  )}
                 </div>
               </div>
             );
