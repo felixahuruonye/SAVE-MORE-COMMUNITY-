@@ -155,6 +155,36 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_user_messages: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_from_admin: boolean | null
+          message: string
+          reaction: string | null
+          read_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_from_admin?: boolean | null
+          message: string
+          reaction?: string | null
+          read_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_from_admin?: boolean | null
+          message?: string
+          reaction?: string | null
+          read_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       balance_history: {
         Row: {
           amount: number
@@ -845,6 +875,48 @@ export type Database = {
           },
         ]
       }
+      payment_requests: {
+        Row: {
+          account_info: Json
+          admin_notes: string | null
+          amount: number
+          countdown_end: string | null
+          created_at: string | null
+          currency_symbol: string | null
+          id: string
+          payment_method: string
+          processed_at: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          account_info: Json
+          admin_notes?: string | null
+          amount: number
+          countdown_end?: string | null
+          created_at?: string | null
+          currency_symbol?: string | null
+          id?: string
+          payment_method: string
+          processed_at?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          account_info?: Json
+          admin_notes?: string | null
+          amount?: number
+          countdown_end?: string | null
+          created_at?: string | null
+          currency_symbol?: string | null
+          id?: string
+          payment_method?: string
+          processed_at?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -1065,54 +1137,63 @@ export type Database = {
       }
       posts: {
         Row: {
+          admin_action: string | null
           body: string
           boost_until: string | null
           boosted: boolean | null
           category: string
           comments_count: number | null
           created_at: string
+          disabled: boolean | null
           featured_rank: number | null
           id: string
           likes_count: number | null
           media_urls: string[] | null
           rating: number | null
           reports_count: number | null
+          requires_approval: boolean | null
           status: string
           title: string
           user_id: string
           view_count: number | null
         }
         Insert: {
+          admin_action?: string | null
           body: string
           boost_until?: string | null
           boosted?: boolean | null
           category?: string
           comments_count?: number | null
           created_at?: string
+          disabled?: boolean | null
           featured_rank?: number | null
           id?: string
           likes_count?: number | null
           media_urls?: string[] | null
           rating?: number | null
           reports_count?: number | null
+          requires_approval?: boolean | null
           status?: string
           title: string
           user_id: string
           view_count?: number | null
         }
         Update: {
+          admin_action?: string | null
           body?: string
           boost_until?: string | null
           boosted?: boolean | null
           category?: string
           comments_count?: number | null
           created_at?: string
+          disabled?: boolean | null
           featured_rank?: number | null
           id?: string
           likes_count?: number | null
           media_urls?: string[] | null
           rating?: number | null
           reports_count?: number | null
+          requires_approval?: boolean | null
           status?: string
           title?: string
           user_id?: string
@@ -1266,6 +1347,126 @@ export type Database = {
           target_type?: string
         }
         Relationships: []
+      }
+      review_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string | null
+          id: string
+          message: string | null
+          request_type: string
+          resolved_at: string | null
+          status: string | null
+          story_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          request_type: string
+          resolved_at?: string | null
+          status?: string | null
+          story_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          request_type?: string
+          resolved_at?: string | null
+          status?: string | null
+          story_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_requests_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "user_storylines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_transactions: {
+        Row: {
+          created_at: string | null
+          id: string
+          platform_earn: number
+          stars_spent: number
+          story_id: string | null
+          uploader_earn: number
+          uploader_id: string | null
+          viewer_earn: number
+          viewer_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          platform_earn: number
+          stars_spent: number
+          story_id?: string | null
+          uploader_earn: number
+          uploader_id?: string | null
+          viewer_earn: number
+          viewer_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          platform_earn?: number
+          stars_spent?: number
+          story_id?: string | null
+          uploader_earn?: number
+          uploader_id?: string | null
+          viewer_earn?: number
+          viewer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_transactions_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "user_storylines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_views: {
+        Row: {
+          id: string
+          stars_spent: number | null
+          story_id: string | null
+          viewed_at: string | null
+          viewer_id: string | null
+        }
+        Insert: {
+          id?: string
+          stars_spent?: number | null
+          story_id?: string | null
+          viewed_at?: string | null
+          viewer_id?: string | null
+        }
+        Update: {
+          id?: string
+          stars_spent?: number | null
+          story_id?: string | null
+          viewed_at?: string | null
+          viewer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_views_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "user_storylines"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       storyline_comments: {
         Row: {
@@ -1820,9 +2021,13 @@ export type Database = {
           full_name: string | null
           id: string
           is_online: boolean | null
+          is_suspended: boolean | null
           last_seen: string | null
           post_count: number | null
+          post_count_free: number | null
           star_balance: number | null
+          suspended_at: string | null
+          suspension_reason: string | null
           total_reactions: number | null
           updated_at: string
           username: string
@@ -1842,9 +2047,13 @@ export type Database = {
           full_name?: string | null
           id: string
           is_online?: boolean | null
+          is_suspended?: boolean | null
           last_seen?: string | null
           post_count?: number | null
+          post_count_free?: number | null
           star_balance?: number | null
+          suspended_at?: string | null
+          suspension_reason?: string | null
           total_reactions?: number | null
           updated_at?: string
           username: string
@@ -1864,9 +2073,13 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_online?: boolean | null
+          is_suspended?: boolean | null
           last_seen?: string | null
           post_count?: number | null
+          post_count_free?: number | null
           star_balance?: number | null
+          suspended_at?: string | null
+          suspension_reason?: string | null
           total_reactions?: number | null
           updated_at?: string
           username?: string
@@ -1874,6 +2087,42 @@ export type Database = {
           vip_expires_at?: string | null
           vip_started_at?: string | null
           wallet_balance?: number | null
+        }
+        Relationships: []
+      }
+      user_reports: {
+        Row: {
+          admin_action: string | null
+          admin_notes: string | null
+          created_at: string | null
+          id: string
+          reason: string
+          reported_user_id: string | null
+          reporter_id: string | null
+          resolved_at: string | null
+          status: string | null
+        }
+        Insert: {
+          admin_action?: string | null
+          admin_notes?: string | null
+          created_at?: string | null
+          id?: string
+          reason: string
+          reported_user_id?: string | null
+          reporter_id?: string | null
+          resolved_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          admin_action?: string | null
+          admin_notes?: string | null
+          created_at?: string | null
+          id?: string
+          reason?: string
+          reported_user_id?: string | null
+          reporter_id?: string | null
+          resolved_at?: string | null
+          status?: string | null
         }
         Relationships: []
       }
@@ -1909,6 +2158,7 @@ export type Database = {
       }
       user_storylines: {
         Row: {
+          caption: string | null
           created_at: string
           expires_at: string
           id: string
@@ -1916,9 +2166,15 @@ export type Database = {
           media_url: string
           music_url: string | null
           preview_url: string | null
+          star_price: number | null
+          status: string | null
+          suspended_at: string | null
+          suspension_reason: string | null
           user_id: string
+          view_count: number | null
         }
         Insert: {
+          caption?: string | null
           created_at?: string
           expires_at?: string
           id?: string
@@ -1926,9 +2182,15 @@ export type Database = {
           media_url: string
           music_url?: string | null
           preview_url?: string | null
+          star_price?: number | null
+          status?: string | null
+          suspended_at?: string | null
+          suspension_reason?: string | null
           user_id: string
+          view_count?: number | null
         }
         Update: {
+          caption?: string | null
           created_at?: string
           expires_at?: string
           id?: string
@@ -1936,7 +2198,12 @@ export type Database = {
           media_url?: string
           music_url?: string | null
           preview_url?: string | null
+          star_price?: number | null
+          status?: string | null
+          suspended_at?: string | null
+          suspension_reason?: string | null
           user_id?: string
+          view_count?: number | null
         }
         Relationships: []
       }
@@ -2304,6 +2571,10 @@ export type Database = {
       increment_checkin_balance: {
         Args: { amount_param: number; user_id_param: string }
         Returns: undefined
+      }
+      process_story_view: {
+        Args: { p_story_id: string; p_viewer_id: string }
+        Returns: Json
       }
     }
     Enums: {
