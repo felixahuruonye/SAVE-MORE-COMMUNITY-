@@ -185,32 +185,6 @@ export const EnhancedStorylineViewer: React.FC<StorylineViewerProps> = ({ userId
     }
   };
 
-  const loadViewers = async () => {
-    if (!stories[currentIndex]) return;
-    
-    const { data } = await supabase
-      .from('story_views')
-      .select('viewer_id, viewed_at, stars_spent')
-      .eq('story_id', stories[currentIndex].id)
-      .order('viewed_at', { ascending: false });
-
-    if (data) {
-      const viewerIds = data.map(v => v.viewer_id);
-      const { data: profiles } = await supabase
-        .from('user_profiles')
-        .select('id, username, avatar_url')
-        .in('id', viewerIds);
-
-      const profileMap = new Map(profiles?.map(p => [p.id, p]));
-      const viewersWithProfiles = data.map(v => ({
-        ...v,
-        profile: profileMap.get(v.viewer_id)
-      }));
-
-      setViewers(viewersWithProfiles);
-    }
-  };
-
   const checkLikeStatus = async () => {
     if (!user || !stories[currentIndex]) return;
 
@@ -226,13 +200,35 @@ export const EnhancedStorylineViewer: React.FC<StorylineViewerProps> = ({ userId
 
   const loadLikeCount = async () => {
     if (!stories[currentIndex]) return;
-
+    
     const { count } = await supabase
       .from('storyline_reactions')
       .select('*', { count: 'exact', head: true })
       .eq('storyline_id', stories[currentIndex].id);
-
+    
     setLikeCount(count || 0);
+  };
+
+  const loadViewers = async () => {
+    if (!stories[currentIndex]) return;
+    
+    const { data } = await supabase
+      .from('story_views')
+      .select(`
+        viewer_id,
+        viewed_at,
+        stars_spent,
+        user_profiles:viewer_id (
+          username,
+          avatar_url
+        )
+      `)
+      .eq('story_id', stories[currentIndex].id)
+      .order('viewed_at', { ascending: false });
+    
+    if (data) {
+      setViewers(data);
+    }
   };
 
   const handleLike = async () => {
@@ -477,11 +473,11 @@ export const EnhancedStorylineViewer: React.FC<StorylineViewerProps> = ({ userId
               >
                 <div className="flex items-center space-x-3">
                   <Avatar>
-                    <AvatarImage src={viewer.profile?.avatar_url} />
-                    <AvatarFallback>{viewer.profile?.username?.[0]}</AvatarFallback>
+                    <AvatarImage src={viewer.user_profiles?.avatar_url} />
+                    <AvatarFallback>{viewer.user_profiles?.username?.[0]}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium">{viewer.profile?.username}</p>
+                    <p className="font-medium">{viewer.user_profiles?.username}</p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(viewer.viewed_at).toLocaleString()}
                     </p>

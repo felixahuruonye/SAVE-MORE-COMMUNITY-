@@ -1,6 +1,6 @@
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Plus } from 'lucide-react';
+import { Plus, Star } from 'lucide-react';
 
 interface StorylineCardProps {
   type: 'create' | 'story';
@@ -9,6 +9,7 @@ interface StorylineCardProps {
   avatarUrl?: string;
   username?: string;
   isViewed?: boolean;
+  starPrice?: number;
 }
 
 export const StorylineCard: React.FC<StorylineCardProps> = ({
@@ -17,7 +18,8 @@ export const StorylineCard: React.FC<StorylineCardProps> = ({
   previewUrl,
   avatarUrl,
   username,
-  isViewed = false
+  isViewed = false,
+  starPrice = 0
 }) => {
   if (type === 'create') {
     return (
@@ -65,6 +67,14 @@ export const StorylineCard: React.FC<StorylineCardProps> = ({
           <AvatarFallback>{username?.[0]?.toUpperCase()}</AvatarFallback>
         </Avatar>
       </div>
+
+      {/* Star Price Badge */}
+      {starPrice > 0 && (
+        <div className="absolute top-2 right-2 z-10 bg-yellow-500 text-white rounded-full px-2 py-1 flex items-center gap-1 shadow-lg">
+          <Star className="w-3 h-3 fill-current" />
+          <span className="text-xs font-bold">{starPrice}</span>
+        </div>
+      )}
 
       {/* Username */}
       <div className="absolute bottom-2 left-2 right-2 z-10">

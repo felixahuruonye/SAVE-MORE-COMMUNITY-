@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Heart, MessageCircle, Star, Home, History, X, Plus } from 'lucide-react';
-import { StorylineViewer } from '@/components/Storyline/StorylineViewer';
+import { EnhancedStorylineViewer } from '@/components/Storyline/EnhancedStorylineViewer';
 import { CreateStoryline } from '@/components/Storyline/CreateStoryline';
 import { StorylineCard } from '@/components/Storyline/StorylineCard';
 import { useToast } from '@/hooks/use-toast';
@@ -533,6 +533,7 @@ const Feed = () => {
                   previewUrl={story.preview_url || story.media_url}
                   avatarUrl={story.user_profile?.avatar_url}
                   username={story.user_profile?.username}
+                  starPrice={story.star_price}
                   onSelect={() => {
                     setSelectedStoryUserId(story.user_id);
                     setShowStoryViewer(true);
@@ -744,7 +745,7 @@ const Feed = () => {
 
       {/* Storyline Viewer */}
       {storylineUser && (
-        <StorylineViewer
+        <EnhancedStorylineViewer
           userId={storylineUser}
           open={!!storylineUser}
           onClose={() => setStorylineUser(null)}
@@ -753,7 +754,7 @@ const Feed = () => {
 
       {/* New Storyline Viewer for Cards */}
       {selectedStoryUserId && (
-        <StorylineViewer
+        <EnhancedStorylineViewer
           userId={selectedStoryUserId}
           open={showStoryViewer}
           onClose={() => {

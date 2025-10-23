@@ -138,26 +138,13 @@ export const CreateStoryline: React.FC<CreateStorylineProps> = ({ onCreated, use
     }
   };
 
+  // Auto-open welcome dialog when component mounts
+  React.useEffect(() => {
+    setShowWelcome(true);
+  }, []);
+
   return (
     <>
-      {/* Story Card - Click to show welcome */}
-      <div 
-        onClick={handleCardClick}
-        className="flex-shrink-0 w-24 cursor-pointer hover:opacity-80 transition-opacity"
-      >
-        <div className="relative">
-          <div className="w-24 h-32 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center border-2 border-primary">
-            <Plus className="h-8 w-8 text-white" />
-          </div>
-          {userProfile && (
-            <Avatar className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-10 h-10 border-2 border-background">
-              <AvatarImage src={userProfile.avatar_url} />
-              <AvatarFallback>{userProfile.username?.[0]}</AvatarFallback>
-            </Avatar>
-          )}
-        </div>
-        <p className="text-xs text-center mt-4 font-medium">Create Story</p>
-      </div>
 
       {/* Welcome Message Dialog */}
       <Dialog open={showWelcome} onOpenChange={setShowWelcome}>
