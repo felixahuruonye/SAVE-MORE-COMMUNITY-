@@ -575,72 +575,72 @@ const Feed = () => {
         </Button>
       </div>
 
-      {/* Posts */}
-      <div className="space-y-4">
-        {posts.map((post) => {
-          const postUser = users[post.user_id];
-          const likedUsernames = getUsernamesWhoLiked(post.id);
-          const currentUserLiked = isPostLiked(post.id);
-          
-          return (
-            <Card key={post.id} id={`post-${post.id}`} className="overflow-hidden">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                   <button
-                     onClick={() => handleProfileClick(post.user_id)}
-                     className="flex items-center space-x-3 hover:opacity-80 transition-opacity relative"
-                   >
-                     <div className="relative">
-                       <Avatar className="w-10 h-10">
-                         <AvatarImage src={postUser?.avatar_url} />
-                         <AvatarFallback>
-                           {postUser?.username?.charAt(0).toUpperCase() || 'U'}
-                         </AvatarFallback>
-                       </Avatar>
-                        {stories.some((s: any) => s.user_id === post.user_id) && (
-                          <div 
-                            className="absolute inset-0 rounded-full border-2 border-primary cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setStorylineUser(post.user_id);
-                            }}
-                          />
-                        )}
-                     </div>
-                    <div className="text-left">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-semibold">{postUser?.username || 'Anonymous'}</span>
-                        {postUser?.vip && (
-                          <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">
-                            <Star className="w-3 h-3 mr-1" />
-                            VIP
-                          </Badge>
-                        )}
+        {/* Posts */}
+        <div className="space-y-3 sm:space-y-4">
+          {posts.map((post) => {
+            const postUser = users[post.user_id];
+            const likedUsernames = getUsernamesWhoLiked(post.id);
+            const currentUserLiked = isPostLiked(post.id);
+            
+            return (
+              <Card key={post.id} id={`post-${post.id}`} className="overflow-hidden glass-card card-3d">
+                <CardHeader className="p-3 sm:p-6">
+                  <div className="flex items-center justify-between">
+                     <button
+                       onClick={() => handleProfileClick(post.user_id)}
+                       className="flex items-center space-x-2 sm:space-x-3 hover:opacity-80 transition-opacity relative"
+                     >
+                       <div className="relative">
+                         <Avatar className="w-9 h-9 sm:w-10 sm:h-10 border-2 border-primary/50">
+                           <AvatarImage src={postUser?.avatar_url} />
+                           <AvatarFallback className="bg-primary text-primary-foreground">
+                             {postUser?.username?.charAt(0).toUpperCase() || 'U'}
+                           </AvatarFallback>
+                         </Avatar>
+                          {stories.some((s: any) => s.user_id === post.user_id) && (
+                            <div 
+                              className="absolute inset-0 rounded-full border-2 border-accent cursor-pointer neon-glow"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setStorylineUser(post.user_id);
+                              }}
+                            />
+                          )}
+                       </div>
+                      <div className="text-left">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-semibold text-sm sm:text-base">{postUser?.username || 'Anonymous'}</span>
+                          {postUser?.vip && (
+                            <Badge variant="secondary" className="text-xs bg-yellow-400 text-black">
+                              <Star className="w-3 h-3 mr-1 fill-current" />
+                              VIP
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(post.created_at).toLocaleDateString()}
+                        </span>
                       </div>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(post.created_at).toLocaleDateString()}
-                      </span>
+                    </button>
+                    <div className="flex items-center space-x-2">
+                      {post.boosted && (
+                        <Badge variant="outline" className="text-xs">Boosted</Badge>
+                      )}
+                      {post.rating > 0 && (
+                        <Badge variant="outline" className="text-xs">★ {post.rating}</Badge>
+                      )}
+                      <PostMenu 
+                        postId={post.id} 
+                        postOwnerId={post.user_id}
+                        onPostDeleted={fetchPosts}
+                      />
                     </div>
-                  </button>
-                  <div className="flex items-center space-x-2">
-                    {post.boosted && (
-                      <Badge variant="outline" className="text-xs">Boosted</Badge>
-                    )}
-                    {post.rating > 0 && (
-                      <Badge variant="outline" className="text-xs">★ {post.rating}</Badge>
-                    )}
-                    <PostMenu 
-                      postId={post.id} 
-                      postOwnerId={post.user_id}
-                      onPostDeleted={fetchPosts}
-                    />
                   </div>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-2">{post.title}</h3>
-                  <Badge variant="outline" className="text-xs">{post.category}</Badge>
-                </div>
-              </CardHeader>
+                  <div className="mt-2 sm:mt-0">
+                    <h3 className="font-semibold mb-2 text-sm sm:text-base">{post.title}</h3>
+                    <Badge variant="outline" className="text-xs">{post.category}</Badge>
+                  </div>
+                </CardHeader>
               
               <CardContent>
                 <p className="text-sm mb-4 whitespace-pre-line">{post.body}</p>

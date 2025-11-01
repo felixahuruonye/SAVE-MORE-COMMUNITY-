@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Upload, X } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Upload, X, Sun, Moon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface EditProfileProps {
@@ -28,6 +30,7 @@ export const EditProfile: React.FC<EditProfileProps> = ({
   onProfileUpdated 
 }) => {
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [username, setUsername] = useState(currentProfile.username);
   const [bio, setBio] = useState(currentProfile.bio || '');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -128,12 +131,33 @@ export const EditProfile: React.FC<EditProfileProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto glass-card">
         <DialogHeader>
-          <DialogTitle>Edit Profile</DialogTitle>
+          <DialogTitle className="gradient-text">Edit Profile</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Theme Toggle */}
+          <div className="glass-card p-4 space-y-3">
+            <Label className="text-base font-semibold">Appearance Settings</Label>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {theme === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                <span className="text-sm">
+                  {theme === 'dark' ? 'Dark Mode (3D Design)' : 'Light Mode'}
+                </span>
+              </div>
+              <Switch
+                checked={theme === 'dark'}
+                onCheckedChange={toggleTheme}
+                className="btn-3d"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Toggle between light mode and dark mode with stunning 3D effects
+            </p>
+          </div>
+
           {/* Avatar */}
           <div className="space-y-2">
             <Label>Profile Picture</Label>

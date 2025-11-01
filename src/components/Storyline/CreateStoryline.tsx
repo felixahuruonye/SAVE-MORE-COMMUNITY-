@@ -145,12 +145,28 @@ export const CreateStoryline: React.FC<CreateStorylineProps> = ({ onCreated, use
 
   return (
     <>
+      {/* Story Card - Clickable to open welcome */}
+      <div 
+        onClick={handleCardClick}
+        className="glass-card card-3d cursor-pointer p-6 rounded-2xl flex flex-col items-center gap-4 hover:neon-glow transition-all"
+      >
+        <Avatar className="h-20 w-20 border-4 border-primary/50">
+          <AvatarImage src={userProfile?.avatar_url} />
+          <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+            {userProfile?.username?.charAt(0).toUpperCase() || 'U'}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex items-center gap-2 text-primary">
+          <Plus className="h-10 w-10" />
+          <span className="text-lg font-semibold">Create Story</span>
+        </div>
+      </div>
 
       {/* Welcome Message Dialog */}
       <Dialog open={showWelcome} onOpenChange={setShowWelcome}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto glass-card">
           <DialogHeader>
-            <DialogTitle className="text-2xl text-center">✨ Welcome to StarStory! ✨</DialogTitle>
+            <DialogTitle className="text-2xl text-center gradient-text">✨ Welcome to StarStory! ✨</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 text-sm">
@@ -207,9 +223,9 @@ export const CreateStoryline: React.FC<CreateStorylineProps> = ({ onCreated, use
 
       {/* Create Story Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto glass-card">
           <DialogHeader>
-            <DialogTitle>Create Story</DialogTitle>
+            <DialogTitle className="gradient-text">Create Story</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -281,11 +297,11 @@ export const CreateStoryline: React.FC<CreateStorylineProps> = ({ onCreated, use
             {/* Star Price Selection */}
             <div>
               <label className="text-sm font-medium mb-2 block">Set Star Price (Optional)</label>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                 <Button
                   variant={starPrice === 0 ? "default" : "outline"}
                   onClick={() => setStarPrice(0)}
-                  className="flex-1"
+                  className="btn-3d"
                 >
                   Free
                 </Button>
@@ -294,16 +310,24 @@ export const CreateStoryline: React.FC<CreateStorylineProps> = ({ onCreated, use
                     key={stars}
                     variant={starPrice === stars ? "default" : "outline"}
                     onClick={() => setStarPrice(stars)}
-                    className="flex-1"
+                    className="btn-3d"
                   >
-                    {stars}<Star className="h-3 w-3 ml-1" />
+                    {stars}<Star className="h-3 w-3 ml-1 fill-current" />
                   </Button>
                 ))}
               </div>
               {starPrice > 0 && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Viewers will pay ₦{starPrice * 500} to view. You earn ₦{starPrice * 500 * 0.6}
-                </p>
+                <div className="glass-card p-3 mt-2 space-y-1">
+                  <p className="text-xs font-semibold">
+                    💰 Viewers pay: ₦{starPrice * 500} (${ (starPrice * 0.33).toFixed(2)})
+                  </p>
+                  <p className="text-xs text-primary">
+                    ✅ You earn: ₦{starPrice * 500 * 0.6} (60%)
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    🎁 Viewer gets: ₦{starPrice * 500 * 0.2} cashback (20%)
+                  </p>
+                </div>
               )}
             </div>
 

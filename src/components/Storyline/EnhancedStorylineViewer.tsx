@@ -62,6 +62,31 @@ export const EnhancedStorylineViewer: React.FC<StorylineViewerProps> = ({ userId
     }
   }, [currentIndex, stories]);
 
+  // Real-time updates for view count
+  useEffect(() => {
+    if (!stories[currentIndex]) return;
+    
+    const channel = supabase
+      .channel('story-views')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'story_views',
+          filter: `story_id=eq.${stories[currentIndex].id}`
+        },
+        () => {
+          loadViewers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [stories, currentIndex]);
+
   const loadUserStarBalance = async () => {
     if (!user) return;
     const { data } = await supabase
@@ -302,18 +327,20 @@ export const EnhancedStorylineViewer: React.FC<StorylineViewerProps> = ({ userId
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-md h-[90vh] p-0 bg-black">
+        <DialogContent className="max-w-md sm:max-w-lg h-[95vh] sm:h-[90vh] p-0 bg-black glass-card">
           <div className="relative h-full flex flex-col">
             {/* Header */}
-            <div className="absolute top-0 left-0 right-0 z-20 p-4 bg-gradient-to-b from-black/80 to-transparent">
+            <div className="absolute top-0 left-0 right-0 z-20 p-3 sm:p-4 bg-gradient-to-b from-black/90 to-transparent">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Avatar className="w-10 h-10">
+                  <Avatar className="w-8 h-8 sm:w-10 sm:h-10 border-2 border-primary">
                     <AvatarImage src={currentStory.user?.avatar_url} />
-                    <AvatarFallback>{currentStory.user?.username?.[0]}</AvatarFallback>
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      {currentStory.user?.username?.[0]}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="text-white">
-                    <p className="font-semibold">{currentStory.user?.username}</p>
+                    <p className="font-semibold text-sm sm:text-base">{currentStory.user?.username}</p>
                     <p className="text-xs text-gray-300">
                       {new Date(currentStory.created_at).toLocaleDateString()}
                     </p>
@@ -321,12 +348,12 @@ export const EnhancedStorylineViewer: React.FC<StorylineViewerProps> = ({ userId
                 </div>
                 <div className="flex items-center gap-2">
                   {currentStory.star_price > 0 && (
-                    <Badge className="bg-yellow-500 text-black">
-                      {currentStory.star_price}<Star className="h-3 w-3 ml-1 inline" />
+                    <Badge className="bg-yellow-500 text-black neon-glow text-xs">
+                      {currentStory.star_price}<Star className="h-3 w-3 ml-1 inline fill-current" />
                     </Badge>
                   )}
-                  <Button variant="ghost" size="icon" onClick={onClose}>
-                    <X className="h-5 w-5 text-white" />
+                  <Button variant="ghost" size="icon" onClick={onClose} className="text-white hover:bg-white/20">
+                    <X className="h-5 w-5" />
                   </Button>
                 </div>
               </div>
@@ -336,8 +363,8 @@ export const EnhancedStorylineViewer: React.FC<StorylineViewerProps> = ({ userId
                 {stories.map((_, index) => (
                   <div
                     key={index}
-                    className={`h-1 flex-1 rounded-full ${
-                      index === currentIndex ? 'bg-white' : 'bg-white/30'
+                    className={`h-1 flex-1 rounded-full transition-all ${
+                      index === currentIndex ? 'bg-primary neon-glow' : 'bg-white/30'
                     }`}
                   />
                 ))}
@@ -407,35 +434,41 @@ export const EnhancedStorylineViewer: React.FC<StorylineViewerProps> = ({ userId
               )}
             </div>
 
-            {/* Caption */}
+            {/* Caption - Always visible even when blurred */}
             {currentStory.caption && (
-              <div className="absolute bottom-24 left-0 right-0 px-4">
-                <p className="text-white bg-black/50 p-2 rounded">{currentStory.caption}</p>
+              <div className="absolute bottom-24 sm:bottom-28 left-0 right-0 px-3 sm:px-4 z-10">
+                <p className={`text-white p-3 rounded-lg ${
+                  isBlurred 
+                    ? 'bg-black/90 text-xl sm:text-2xl font-bold text-shadow-3d' 
+                    : 'bg-black/50 text-sm sm:text-base'
+                }`}>
+                  {currentStory.caption}
+                </p>
               </div>
             )}
 
             {/* Actions */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-              <div className="flex items-center space-x-4 mb-3">
+            <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 bg-gradient-to-t from-black/90 to-transparent">
+              <div className="flex items-center space-x-3 sm:space-x-4 mb-3">
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={handleLike}
-                  className="text-white"
+                  className="text-white hover:bg-white/20 btn-3d"
                 >
-                  <Heart className={`h-6 w-6 ${hasLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                  <Heart className={`h-5 w-5 sm:h-6 sm:w-6 ${hasLiked ? 'fill-red-500 text-red-500' : ''}`} />
                 </Button>
-                <span className="text-white">{likeCount}</span>
+                <span className="text-white text-sm sm:text-base">{likeCount}</span>
                 
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowViewers(true)}
-                  className="text-white"
+                  className="text-white hover:bg-white/20 btn-3d"
                 >
-                  <Eye className="h-6 w-6" />
+                  <Eye className="h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
-                <span className="text-white">{currentStory.view_count}</span>
+                <span className="text-white text-sm sm:text-base">{viewers.length}</span>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -443,10 +476,10 @@ export const EnhancedStorylineViewer: React.FC<StorylineViewerProps> = ({ userId
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Add a comment..."
-                  className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                  className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/50 text-sm"
                   onKeyDown={(e) => e.key === 'Enter' && handleComment()}
                 />
-                <Button onClick={handleComment} size="sm">
+                <Button onClick={handleComment} size="sm" className="btn-3d">
                   <MessageCircle className="h-4 w-4" />
                 </Button>
               </div>
