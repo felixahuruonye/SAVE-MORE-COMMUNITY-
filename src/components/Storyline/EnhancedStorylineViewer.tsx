@@ -98,6 +98,7 @@ export const EnhancedStorylineViewer: React.FC<StorylineViewerProps> = ({ userId
   };
 
   const loadStories = async () => {
+    // First load the stories
     const { data, error } = await supabase
       .from('user_storylines')
       .select('*')
@@ -111,18 +112,67 @@ export const EnhancedStorylineViewer: React.FC<StorylineViewerProps> = ({ userId
       return;
     }
 
+    // Load user profiles and story settings
     const userIds = [...new Set(data?.map(s => s.user_id) || [])];
     const { data: profiles } = await supabase
       .from('user_profiles')
-      .select('id, username, avatar_url')
+      .select('id, username, avatar_url, story_settings, age')
       .in('id', userIds);
 
     const profileMap = new Map(profiles?.map(p => [p.id, p]));
 
-    const storiesWithUsers = data?.map(story => ({
+    // Check if current user should see these stories based on settings
+    let filteredStories = data || [];
+    
+    if (user && userId !== user.id) {
+      const creatorProfile = profileMap.get(userId);
+      const viewerProfile = await supabase
+        .from('user_profiles')
+        .select('age')
+        .eq('id', user.id)
+        .single();
+
+      if (creatorProfile?.story_settings) {
+        const settings = creatorProfile.story_settings as any;
+        
+        // Check if stories are set to "Only Me"
+        if (settings.show_only_me) {
+          filteredStories = [];
+        }
+        
+        // Check if stories are set to "Followers Only"
+        if (settings.show_to_followers) {
+          const { data: followData } = await supabase
+            .from('followers')
+            .select('id')
+            .eq('follower_id', user.id)
+            .eq('following_id', userId)
+            .maybeSingle();
+          
+          if (!followData) {
+            filteredStories = [];
+          }
+        }
+        
+        // Check age restriction
+        if (settings.audience_control && settings.min_age) {
+          const viewerAge = viewerProfile?.data?.age;
+          if (!viewerAge || viewerAge < settings.min_age) {
+            filteredStories = [];
+            toast({
+              title: 'Age Restricted',
+              description: `You must be at least ${settings.min_age} years old to view these stories.`,
+              variant: 'destructive'
+            });
+          }
+        }
+      }
+    }
+
+    const storiesWithUsers = filteredStories.map(story => ({
       ...story,
       user: profileMap.get(story.user_id)
-    })) || [];
+    }));
 
     setStories(storiesWithUsers as any);
   };

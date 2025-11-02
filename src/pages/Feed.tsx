@@ -192,36 +192,12 @@ const Feed = () => {
         .select('*')
         .eq('status', 'approved');
 
-      if (showOldPosts && user) {
-        // Get posts the user has already viewed
-        const { data: viewedPostIds } = await supabase
-          .from('post_views')
-          .select('post_id')
-          .eq('user_id', user.id);
-
-        const viewedIds = viewedPostIds?.map(v => v.post_id) || [];
-        if (viewedIds.length > 0) {
-          query = query.in('id', viewedIds);
-        }
-      } else if (user) {
-        // Get posts the user hasn't viewed yet and hidden posts
-        const { data: viewedPostIds } = await supabase
-          .from('post_views')
-          .select('post_id')
-          .eq('user_id', user.id);
-
-        const { data: hiddenPostIds } = await supabase
-          .from('hidden_posts')
-          .select('post_id')
-          .eq('user_id', user.id);
-
-        const viewedIds = viewedPostIds?.map(v => v.post_id) || [];
-        const hiddenIds = hiddenPostIds?.map(h => h.post_id) || [];
-        const excludeIds = [...new Set([...viewedIds, ...hiddenIds])];
-        
-        if (excludeIds.length > 0) {
-          query = query.not('id', 'in', `(${excludeIds.join(',')})`);
-        }
+      if (showOldPosts) {
+        // Show posts with post_status = 'viewed' (48+ hours old)
+        query = query.eq('post_status', 'viewed');
+      } else {
+        // Show new posts (less than 48 hours old)
+        query = query.eq('post_status', 'new');
       }
 
       const { data: postsData, error: postsError } = await query
@@ -435,24 +411,38 @@ const Feed = () => {
   const trackPostView = async (postId: string) => {
     if (!user) return;
 
-    // Insert view if it doesn't exist
-    await supabase.from('post_views').insert({
-      post_id: postId,
-      user_id: user.id,
-    }).select().single();
+    try {
+      // Check if view already exists
+      const { data: existingView } = await supabase
+        .from('post_views')
+        .select('id')
+        .eq('post_id', postId)
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-    // Update view count
-    const { data: post } = await supabase
-      .from('posts')
-      .select('view_count')
-      .eq('id', postId)
-      .single();
+      if (!existingView) {
+        // Insert view only if it doesn't exist
+        await supabase.from('post_views').insert({
+          post_id: postId,
+          user_id: user.id,
+        });
 
-    if (post) {
-      await supabase
-        .from('posts')
-        .update({ view_count: (post.view_count || 0) + 1 })
-        .eq('id', postId);
+        // Update view count
+        const { data: post } = await supabase
+          .from('posts')
+          .select('view_count')
+          .eq('id', postId)
+          .single();
+
+        if (post) {
+          await supabase
+            .from('posts')
+            .update({ view_count: (post.view_count || 0) + 1 })
+            .eq('id', postId);
+        }
+      }
+    } catch (error) {
+      console.error('Error tracking view:', error);
     }
   };
 
@@ -509,6 +499,9 @@ const Feed = () => {
           <h1 className="text-2xl font-bold text-primary">SaveMore Community</h1>
           <p className="text-muted-foreground">Share your food experiences</p>
         </div>
+
+        {/* Search Bar */}
+        <AdvancedSearchBar />
 
         {/* Stories Strip */}
         <section aria-label="Stories" className="-mx-2">
