@@ -1,1 +1,4 @@
 project_id = "almrajoumwliddtmppsm"
+
+[functions.flowair-search]
+verify_jwt = true
