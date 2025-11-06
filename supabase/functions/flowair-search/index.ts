@@ -78,22 +78,14 @@ serve(async (req) => {
     let aiCredits = profile?.ai_credits || 0;
     let starBalance = profile?.star_balance || 0;
 
-    // Give new users free credits OR auto-recharge
+    // Credits policy: recharge from stars if available, otherwise grant 250 credits so UX never hard-stops
     if (aiCredits <= 0) {
       if (starBalance >= 100) {
         aiCredits = 250;
         starBalance -= 100;
-      } else if ((profile?.ai_credits === null || profile?.ai_credits === 0) && starBalance === 0) {
-        // First-time user: give 250 free AI credits
-        aiCredits = 250;
       } else {
-        return new Response(
-          JSON.stringify({ 
-            error: 'Out of AI credits',
-            message: 'You need to earn or buy more Stars to use FlowaIr. (100 Stars = 250 AI credits)'
-          }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        // Grace grant to allow users to use FlowaIr without blocking the UI
+        aiCredits = 250;
       }
     }
 
