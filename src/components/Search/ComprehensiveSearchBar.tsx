@@ -39,6 +39,7 @@ export const ComprehensiveSearchBar = () => {
   const [trending, setTrending] = useState<any[]>([]);
   const [hotTopics, setHotTopics] = useState<any[]>([]);
   const [flowaIrResponse, setFlowaIrResponse] = useState('');
+  const [userResults, setUserResults] = useState<any[]>([]);
   const [savedSearches, setSavedSearches] = useState<string[]>([]);
   const [showTrendingDialog, setShowTrendingDialog] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -117,34 +118,50 @@ export const ComprehensiveSearchBar = () => {
   const performSearch = async () => {
     setIsSearching(true);
     try {
-      // Track search
-      await supabase.rpc('track_search', { search_keyword: query });
-
-      let searchQuery = supabase
-        .from('posts')
-        .select('*, user_profiles(username, avatar_url)')
-        .eq('status', 'approved')
-        .or(`title.ilike.%${query}%,body.ilike.%${query}%,category.ilike.%${query}%`);
-
-      if (category !== 'All') {
-        searchQuery = searchQuery.eq('category', category);
+      const q = query.trim();
+      if (q.length === 0 && category === 'All') {
+        setResults([]); setNewPosts([]); setViewedPosts([]); setUserResults([]); setFlowaIrResponse('');
+        return;
       }
 
-      const { data } = await searchQuery.limit(50);
+      // Track search keyword
+      await supabase.rpc('track_search', { search_keyword: q || category });
 
-      if (data) {
-        setResults(data);
-        
-        // Separate into new and viewed
-        const newResults = data.filter(p => p.post_status === 'new');
-        const viewedResults = data.filter(p => p.post_status === 'viewed');
-        setNewPosts(newResults);
-        setViewedPosts(viewedResults);
+      // Posts search (no cross-table join to avoid PostgREST rel errors)
+      let postsQuery = supabase
+        .from('posts')
+        .select('*')
+        .eq('status', 'approved');
 
-        // Call FlowaIr if user has credits
-        if (user) {
-          callFlowaIr(query, data);
-        }
+      if (q.length > 0) {
+        postsQuery = postsQuery.or(`title.ilike.%${q}%,body.ilike.%${q}%,category.ilike.%${q}%`);
+      }
+      if (category !== 'All') {
+        postsQuery = postsQuery.eq('category', category);
+      }
+      const { data: posts } = await postsQuery.order('created_at', { ascending: false }).limit(50);
+
+      setResults(posts || []);
+      const newResults = (posts || []).filter(p => p.post_status === 'new');
+      const viewedResults = (posts || []).filter(p => p.post_status === 'viewed');
+      setNewPosts(newResults);
+      setViewedPosts(viewedResults);
+
+      // Users search
+      if (q.length >= 2) {
+        const { data: users } = await supabase
+          .from('user_profiles')
+          .select('id, username, avatar_url')
+          .or(`username.ilike.%${q}%,id::text.ilike.%${q}%`)
+          .limit(10);
+        setUserResults(users || []);
+      } else {
+        setUserResults([]);
+      }
+
+      // FlowaIr insight
+      if (user && q.length > 0) {
+        await callFlowaIr(q, posts || []);
       }
     } catch (error) {
       console.error('Search error:', error);
@@ -302,6 +319,9 @@ export const ComprehensiveSearchBar = () => {
         <Button onClick={performSearch} disabled={isSearching} className="gap-2">
           {isSearching ? 'Searching...' : 'Search'}
         </Button>
+        <Button variant="outline" onClick={() => callFlowaIr(query, results)} disabled={!query}>
+          FlowaIr
+        </Button>
       </div>
 
       {/* Voice Credits Indicator */}
@@ -370,6 +390,20 @@ export const ComprehensiveSearchBar = () => {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {userResults.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold">Users</h3>
+              <div className="flex flex-col gap-2">
+                {userResults.map((u) => (
+                  <div key={u.id} className="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-muted/30" onClick={() => navigate(`/profile/${u.id}`)}>
+                    <img src={u.avatar_url || '/placeholder.svg'} alt={`${u.username} avatar`} className="w-8 h-8 rounded-full" />
+                    <span>@{u.username}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           <Tabs defaultValue="new">

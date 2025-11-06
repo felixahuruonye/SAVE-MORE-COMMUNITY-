@@ -35,6 +35,7 @@ interface Post {
   view_count: number;
   rating: number;
   user_id: string;
+  star_price?: number;
 }
 
 interface UserProfile {
@@ -420,7 +421,7 @@ const Feed = () => {
     return postLikesList.map(like => users[like.user_id]?.username || 'Unknown').filter(Boolean);
   };
 
-  const trackPostView = async (postId: string) => {
+  const trackPostView = async (post: Post) => {
     if (!user) return;
 
     try {
@@ -428,29 +429,34 @@ const Feed = () => {
       const { data: existingView } = await supabase
         .from('post_views')
         .select('id')
-        .eq('post_id', postId)
+        .eq('post_id', post.id)
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (!existingView) {
-        // Insert view only if it doesn't exist
+        // If paid content and not uploader, process earning split atomically (RPC)
+        if (post.star_price && post.star_price > 0 && post.user_id !== user.id) {
+          await (supabase as any).rpc('process_post_view', { p_post_id: post.id, p_viewer_id: user.id });
+        }
+
+        // Record the view
         await supabase.from('post_views').insert({
-          post_id: postId,
+          post_id: post.id,
           user_id: user.id,
         });
 
         // Update view count
-        const { data: post } = await supabase
+        const { data: postRow } = await supabase
           .from('posts')
           .select('view_count')
-          .eq('id', postId)
+          .eq('id', post.id)
           .single();
 
-        if (post) {
+        if (postRow) {
           await supabase
             .from('posts')
-            .update({ view_count: (post.view_count || 0) + 1 })
-            .eq('id', postId);
+            .update({ view_count: (postRow.view_count || 0) + 1 })
+            .eq('id', post.id);
         }
       }
     } catch (error) {
@@ -469,7 +475,7 @@ const Feed = () => {
   useEffect(() => {
     // Track views for visible posts
     posts.forEach(post => {
-      trackPostView(post.id);
+      trackPostView(post);
     });
   }, [posts]);
 
