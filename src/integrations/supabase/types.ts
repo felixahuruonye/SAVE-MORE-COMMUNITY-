@@ -3051,10 +3051,13 @@ export type Database = {
         }
         Returns: Json
       }
-      process_story_view: {
-        Args: { p_story_id: string; p_viewer_id: string }
+      process_post_view: {
+        Args: { p_post_id: string; p_viewer_id: string }
         Returns: Json
       }
+      process_story_view:
+        | { Args: { p_story_id: string; p_viewer_id: string }; Returns: Json }
+        | { Args: { p_story_id: string; p_viewer_id: string }; Returns: Json }
       track_search: { Args: { search_keyword: string }; Returns: undefined }
       update_post_status: { Args: never; Returns: undefined }
     }
