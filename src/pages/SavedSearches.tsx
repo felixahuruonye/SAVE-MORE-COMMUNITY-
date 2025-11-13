@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
@@ -10,15 +10,9 @@ import { Link } from 'react-router-dom';
 const SavedSearches = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [savedSearches, setSavedSearches] = useState<any[]>([]);
+  const [savedSearches, setSavedSearches] = useState<{ id: string; query: string }[]>([]);
 
-  useEffect(() => {
-    if (user) {
-      loadSavedSearches();
-    }
-  }, [user]);
-
-  const loadSavedSearches = async () => {
+  const loadSavedSearches = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
       .from('saved_searches')
@@ -27,7 +21,13 @@ const SavedSearches = () => {
       .order('created_at', { ascending: false });
 
     if (data) setSavedSearches(data);
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadSavedSearches();
+    }
+  }, [user, loadSavedSearches]);
 
   const deleteSavedSearch = async (id: string) => {
     if (!user) return;

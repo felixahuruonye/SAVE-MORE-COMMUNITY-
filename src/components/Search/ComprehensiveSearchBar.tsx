@@ -276,11 +276,12 @@ export const ComprehensiveSearchBar = () => {
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-          <Input
+          <input
+            type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search posts, stories, trends..."
-            className="pl-10 pr-20"
+            className="w-full pl-10 pr-20 py-2 border rounded-md"
             onKeyDown={(e) => {
               if (e.key === 'Enter') performSearch();
             }}
