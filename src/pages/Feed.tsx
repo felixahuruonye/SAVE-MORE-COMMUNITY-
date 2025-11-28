@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import CreatePost from '@/components/Posts/CreatePost';
 import ProfileSetup from '@/components/Profile/ProfileSetup';
-import NewSearchBar from '@/components/Search/NewSearchBar';
+import { ComprehensiveSearchBar } from '@/components/Search/ComprehensiveSearchBar';
 import { CommentSection } from '@/components/Feed/CommentSection';
 import { VideoPlayer } from '@/components/Feed/VideoPlayer';
 import { ShareMenu } from '@/components/Feed/ShareMenu';
@@ -65,11 +65,27 @@ const Feed = () => {
   const [fullscreenMedia, setFullscreenMedia] = useState<string | null>(null);
   const [storylineUser, setStorylineUser] = useState<string | null>(null);
   const [userStories, setUserStories] = useState<{ [key: string]: number }>({});
-  const [stories, setStories] = useState<any[]>([]);
+  const [stories, setStories] = useState<
+    {
+      id: string;
+      user_id: string;
+      preview_url: string;
+      media_url: string;
+      star_price: number;
+      user_profile: {
+        id: string;
+        username: string;
+        avatar_url: string;
+      };
+    }[]
+  >([]);
   const [selectedStoryUserId, setSelectedStoryUserId] = useState<string | null>(null);
   const [showStoryViewer, setShowStoryViewer] = useState(false);
   const [showCreateStory, setShowCreateStory] = useState(false);
-  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+  const [currentUserProfile, setCurrentUserProfile] = useState<{
+    username: string;
+    avatar_url: string;
+  } | null>(null);
   const [isCreatePostOpen, setisCreatePostOpen] = useState(false);
   const { toast } = useToast();
 
@@ -77,7 +93,7 @@ const Feed = () => {
     if (user) {
       checkUserProfile();
     }
-  }, [user]);
+  }, [user, checkUserProfile]);
 
   useEffect(() => {
     if (userProfile) {
@@ -86,9 +102,9 @@ const Feed = () => {
       loadCurrentUserProfile();
       setupRealtimeSubscription();
     }
-  }, [userProfile]);
+  }, [userProfile, fetchPosts, loadUserStories, loadCurrentUserProfile, setupRealtimeSubscription]);
 
-  const loadCurrentUserProfile = async () => {
+  const loadCurrentUserProfile = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
       .from('user_profiles')
@@ -96,9 +112,9 @@ const Feed = () => {
       .eq('id', user.id)
       .single();
     setCurrentUserProfile(data);
-  };
+  }, [user]);
 
-  const loadUserStories = async () => {
+  const loadUserStories = useCallback(async () => {
     const { data } = await supabase
       .from('user_storylines')
       .select('*')
@@ -128,15 +144,15 @@ const Feed = () => {
 
       setStories(storiesWithProfiles);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (posts.length > 0) {
       loadUserStories();
     }
-  }, [posts]);
+  }, [posts, loadUserStories]);
 
-  const checkUserProfile = async () => {
+  const checkUserProfile = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -160,15 +176,15 @@ const Feed = () => {
       console.error('Error checking profile:', error);
       setLoading(false);
     }
-  };
+  }, [user]);
 
 
-  const loadCommentCounts = async (postIds: string[]) => {
+  const loadCommentCounts = useCallback(async (postIds: string[]) => {
     if (postIds.length === 0) return;
     try {
       const counts = await Promise.all(
         postIds.map(async (id) => {
-          const { count } = await (supabase as any)
+          const { count } = await supabase
             .from('post_comments')
             .select('*', { count: 'exact', head: true })
             .eq('post_id', id);
@@ -185,9 +201,9 @@ const Feed = () => {
     } catch (e) {
       console.error('Error loading comment counts:', e);
     }
-  };
+  }, []);
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     try {
       let query = supabase
         .from('posts')
@@ -278,9 +294,9 @@ const Feed = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showOldPosts, user, toast, loadCommentCounts]);
 
-  const setupRealtimeSubscription = () => {
+  const setupRealtimeSubscription = useCallback(() => {
     const channel = supabase
       .channel('posts-feed')
       .on(
@@ -305,7 +321,7 @@ const Feed = () => {
         (payload) => {
           setPostLikes(prev => {
             const updated = { ...prev };
-            const postId = payload.new.post_id;
+            const postId = (payload.new as PostLike).post_id;
             if (!updated[postId]) {
               updated[postId] = [];
             }
@@ -331,16 +347,16 @@ const Feed = () => {
         (payload) => {
           setPostLikes(prev => {
             const updated = { ...prev };
-            const postId = payload.old.post_id;
+            const postId = (payload.old as PostLike).post_id;
             if (updated[postId]) {
-              updated[postId] = updated[postId].filter(like => like.id !== payload.old.id);
+              updated[postId] = updated[postId].filter(like => like.id !== (payload.old as PostLike).id);
             }
             return updated;
           });
           
           // Update likes count on the post
           setPosts(prev => prev.map(post => 
-            post.id === payload.old.post_id 
+            post.id === (payload.old as PostLike).post_id
               ? { ...post, likes_count: Math.max(0, post.likes_count - 1) }
               : post
           ));
@@ -373,7 +389,7 @@ const Feed = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  };
+  }, [fetchPosts]);
 
   const handleLike = async (postId: string) => {
     if (!user) return;
@@ -422,7 +438,7 @@ const Feed = () => {
     return postLikesList.map(like => users[like.user_id]?.username || 'Unknown').filter(Boolean);
   };
 
-  const trackPostView = async (post: Post) => {
+  const trackPostView = useCallback(async (post: Post) => {
     if (!user) return;
 
     try {
@@ -437,7 +453,7 @@ const Feed = () => {
       if (!existingView) {
         // If paid content and not uploader, process earning split atomically (RPC)
         if (post.star_price && post.star_price > 0 && post.user_id !== user.id) {
-          await (supabase as any).rpc('process_post_view', { p_post_id: post.id, p_viewer_id: user.id });
+          await supabase.rpc('process_post_view', { p_post_id: post.id, p_viewer_id: user.id });
         }
 
         // Record the view
@@ -463,7 +479,7 @@ const Feed = () => {
     } catch (error) {
       console.error('Error tracking view:', error);
     }
-  };
+  }, [user]);
 
   const handleProfileClick = (userId: string) => {
     navigate(`/profile/${userId}`);
@@ -478,7 +494,7 @@ const Feed = () => {
     posts.forEach(post => {
       trackPostView(post);
     });
-  }, [posts]);
+  }, [posts, trackPostView]);
 
   if (needsProfileSetup) {
     return <ProfileSetup onComplete={() => {
@@ -520,7 +536,7 @@ const Feed = () => {
         </div>
 
         {/* Search Bar */}
-        <NewSearchBar />
+        <ComprehensiveSearchBar />
 
         {/* Stories Strip */}
         <section aria-label="Stories" className="-mx-2">
@@ -536,7 +552,7 @@ const Feed = () => {
               </div>
 
               {/* Other users' stories */}
-              {stories.map((story: any) => (
+              {stories.map((story) => (
                 <StorylineCard
                   key={story.id}
                   type="story"
@@ -611,10 +627,10 @@ const Feed = () => {
                              {postUser?.username?.charAt(0).toUpperCase() || 'U'}
                            </AvatarFallback>
                          </Avatar>
-                          {stories.some((s: any) => s.user_id === post.user_id) && (
+                          {stories.some((s) => s.user_id === post.user_id) && (
                             <div 
                               className="absolute inset-0 rounded-full border-2 border-accent cursor-pointer neon-glow"
-                              onClick={(e) => {
+                              onClick={(e: React.MouseEvent) => {
                                 e.stopPropagation();
                                 setStorylineUser(post.user_id);
                               }}
